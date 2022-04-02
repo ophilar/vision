@@ -18,9 +18,7 @@ from ._utils import grid_sample, make_coords_grid, upsample_flow
 __all__ = (
     "RAFT",
     "raft_large",
-    "raft_small",
     "Raft_Large_Weights",
-    "Raft_Small_Weights",
 )
 
 
@@ -608,39 +606,6 @@ class Raft_Large_Weights(WeightsEnum):
     DEFAULT = C_T_SKHT_V2
 
 
-class Raft_Small_Weights(WeightsEnum):
-    C_T_V1 = Weights(
-        # Chairs + Things, ported from original paper repo (raft-small.pth)
-        url="https://download.pytorch.org/models/raft_small_C_T_V1-ad48884c.pth",
-        transforms=OpticalFlow,
-        meta={
-            **_COMMON_META,
-            "num_params": 990162,
-            "recipe": "https://github.com/princeton-vl/RAFT",
-            "sintel_train_cleanpass_epe": 2.1231,
-            "sintel_train_finalpass_epe": 3.2790,
-            "kitti_train_per_image_epe": 7.6557,
-            "kitti_train_f1-all": 25.2801,
-        },
-    )
-    C_T_V2 = Weights(
-        # Chairs + Things
-        url="https://download.pytorch.org/models/raft_small_C_T_V2-01064c6d.pth",
-        transforms=OpticalFlow,
-        meta={
-            **_COMMON_META,
-            "num_params": 990162,
-            "recipe": "https://github.com/pytorch/vision/tree/main/references/optical_flow",
-            "sintel_train_cleanpass_epe": 1.9901,
-            "sintel_train_finalpass_epe": 3.2831,
-            "kitti_train_per_image_epe": 7.5978,
-            "kitti_train_f1-all": 25.2369,
-        },
-    )
-
-    DEFAULT = C_T_V2
-
-
 def _raft(
     *,
     weights=None,
@@ -769,54 +734,5 @@ def raft_large(*, weights: Optional[Raft_Large_Weights] = None, progress=True, *
         flow_head_hidden_size=256,
         # Mask predictor
         use_mask_predictor=True,
-        **kwargs,
-    )
-
-
-@handle_legacy_interface(weights=("pretrained", Raft_Small_Weights.C_T_V2))
-def raft_small(*, weights: Optional[Raft_Small_Weights] = None, progress=True, **kwargs) -> RAFT:
-    """RAFT "small" model from
-    `RAFT: Recurrent All Pairs Field Transforms for Optical Flow <https://arxiv.org/abs/2003.12039>`_.
-
-    Please see the example below for a tutorial on how to use this model.
-
-    Args:
-        weights(Raft_Small_weights, optional): The pretrained weights for the model
-        progress (bool): If True, displays a progress bar of the download to stderr
-        kwargs (dict): Parameters that will be passed to the :class:`~torchvision.models.optical_flow.RAFT` class
-            to override any default.
-
-    Returns:
-        RAFT: The model.
-
-    """
-    weights = Raft_Small_Weights.verify(weights)
-
-    return _raft(
-        weights=weights,
-        progress=progress,
-        # Feature encoder
-        feature_encoder_layers=(32, 32, 64, 96, 128),
-        feature_encoder_block=BottleneckBlock,
-        feature_encoder_norm_layer=InstanceNorm2d,
-        # Context encoder
-        context_encoder_layers=(32, 32, 64, 96, 160),
-        context_encoder_block=BottleneckBlock,
-        context_encoder_norm_layer=None,
-        # Correlation block
-        corr_block_num_levels=4,
-        corr_block_radius=3,
-        # Motion encoder
-        motion_encoder_corr_layers=(96,),
-        motion_encoder_flow_layers=(64, 32),
-        motion_encoder_out_channels=82,
-        # Recurrent block
-        recurrent_block_hidden_state_size=96,
-        recurrent_block_kernel_size=(3,),
-        recurrent_block_padding=(1,),
-        # Flow head
-        flow_head_hidden_size=128,
-        # Mask predictor
-        use_mask_predictor=False,
         **kwargs,
     )
